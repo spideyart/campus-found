@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Lost & Found Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-compass text-indigo-500 text-xl"></i>
+                <h1 class="text-lg font-bold">Campus<span class="text-indigo-400">Found</span></h1>
+            </div>
+            <a href="#form-section" class="bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">+ Report</a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        
+        <!-- Post Form -->
+        <section id="form-section" class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3">Report Lost / Found Item</h2>
+            <form id="itemForm" class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="cursor-pointer text-center">
+                        <input type="radio" name="itemType" value="Lost" checked class="peer sr-only">
+                        <div class="py-1.5 rounded-lg border border-slate-600 bg-slate-700/50 peer-checked:bg-red-500/20 peer-checked:border-red-500 peer-checked:text-red-400 text-xs font-bold">🔴 Lost</div>
+                    </label>
+                    <label class="cursor-pointer text-center">
+                        <input type="radio" name="itemType" value="Found" class="peer sr-only">
+                        <div class="py-1.5 rounded-lg border border-slate-600 bg-slate-700/50 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500 peer-checked:text-emerald-400 text-xs font-bold">🟢 Found</div>
+                    </label>
+                </div>
+                <input type="text" id="itemTitle" placeholder="Item Name (e.g. Casio fx-991EX)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="itemLocation" placeholder="Location (e.g. CS Lab 2)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs">
+                    <input type="text" id="itemContact" placeholder="WhatsApp Number" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs">
+                </div>
+                <textarea id="itemDesc" rows="2" placeholder="Details (color, scratches...)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs"></textarea>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded-lg text-xs">Post Item</button>
+            </form>
+        </section>
+
+        <!-- Feed -->
+        <section class="space-y-3">
+            <h2 class="text-sm font-bold text-slate-300">Live Campus Feed</h2>
+            <div id="feedList" class="space-y-3"></div>
+        </section>
+
+    </main>
+
+    <script>
+        const form = document.getElementById('itemForm');
+        const feedList = document.getElementById('feedList');
+
+        let items = JSON.parse(localStorage.getItem('campus_items')) || [
+            { id: 1, type: 'Lost', title: 'Casio Scientific Calculator', location: 'Library 2nd Floor', contact: '9876543210', desc: 'Black cover with blue sticker on back.' },
+            { id: 2, type: 'Found', title: 'College ID Card', location: 'Near Canteen', contact: '9123456780', desc: 'CSE 2nd Year student card.' }
+        ];
+
+        function renderItems() {
+            feedList.innerHTML = items.map(item => `
+                <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl flex justify-between items-center gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${item.type === 'Lost' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}">${item.type.toUpperCase()}</span>
+                            <h3 class="text-sm font-bold">${item.title}</h3>
+                        </div>
+                        <p class="text-xs text-slate-400">${item.desc}</p>
+                        <p class="text-[11px] text-slate-500"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i>${item.location}</p>
+                    </div>
+                    <a href="https://wa.me/91${item.contact.replace(/[^0-9]/g, '')}" target="_blank" class="bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0">
+                        <i class="fa-brands fa-whatsapp"></i> Chat
+                    </a>
+                </div>
+            `).join('');
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newItem = {
+                id: Date.now(),
+                type: document.querySelector('input[name="itemType"]:checked').value,
+                title: document.getElementById('itemTitle').value,
+                location: document.getElementById('itemLocation').value,
+                contact: document.getElementById('itemContact').value,
+                desc: document.getElementById('itemDesc').value
+            };
+            items.unshift(newItem);
+            localStorage.setItem('campus_items', JSON.stringify(items));
+            form.reset();
+            renderItems();
+        });
+
+        renderItems();
+    </script>
+</body>
+</html>
