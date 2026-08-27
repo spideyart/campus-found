@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Campus Lost & Found Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
@@ -62,35 +61,30 @@
     </main>
 
     <script>
-        const SUPABASE_URL = "https://tiwrylrecmjwuprhuqyj.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpd3J5bHJlY21qd3Vwcmh1cXlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MDU5MjMsImV4cCI6MjEwMzM4MTkyM30.keuLkhmJzS5Vm6IrpX8D1iDG2rWtW3euOCbo579qULo";
+        const API_URL = "https://tiwrylrecmjwuprhuqyj.supabase.co/rest/v1/campus_items";
+        const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpd3J5bHJlY21qd3Vwcmh1cXlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MDU5MjMsImV4cCI6MjEwMzM4MTkyM30.keuLkhmJzS5Vm6IrpX8D1iDG2rWtW3euOCbo579qULo";
 
-        let client = null;
-        try {
-            client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (err) {
-            console.error(err);
-        }
+        const headers = {
+            "apikey": API_KEY,
+            "Authorization": "Bearer " + API_KEY,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+        };
 
         const feedList = document.getElementById('feedList');
         const submitBtn = document.getElementById('submitBtn');
 
         async function fetchItems() {
-            if (!client) {
-                feedList.innerHTML = `<p class="text-xs text-red-400 text-center py-4">Database failed to initialize.</p>`;
-                return;
-            }
-
             try {
-                const { data, error } = await client
-                    .from('campus_items')
-                    .select('*')
-                    .order('id', { ascending: false });
-
-                if (error) {
-                    feedList.innerHTML = `<div class="p-3 bg-red-900/30 border border-red-700/50 rounded-lg text-center"><p class="text-xs text-red-300 font-semibold">Database Error: ${error.message}</p></div>`;
+                const res = await fetch(`${API_URL}?select=*&order=id.desc`, { headers });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    feedList.innerHTML = `<div class="p-3 bg-red-900/30 border border-red-700/50 rounded-lg text-center text-xs text-red-300">Error: ${err.message || 'Failed to fetch'}</div>`;
                     return;
                 }
+
+                const data = await res.json();
 
                 if (!data || data.length === 0) {
                     feedList.innerHTML = `<div class="text-center py-10 bg-slate-800/40 border border-slate-800 rounded-xl text-xs text-slate-400">No items posted yet. Be the first to report!</div>`;
@@ -125,9 +119,11 @@
 
         async function deleteItem(id) {
             if (confirm("Are you sure you want to remove this item?")) {
-                const { error } = await client.from('campus_items').delete().eq('id', id);
-                if (error) alert("Error deleting: " + error.message);
-                else fetchItems();
+                await fetch(`${API_URL}?id=eq.${id}`, {
+                    method: 'DELETE',
+                    headers
+                });
+                fetchItems();
             }
         }
 
@@ -144,9 +140,15 @@
                 description: document.getElementById('itemDesc').value
             };
 
-            const { error } = await client.from('campus_items').insert([newItem]);
-            if (error) {
-                alert("Failed to post: " + error.message);
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(newItem)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert("Failed to post: " + (err.message || 'Error occurred'));
             } else {
                 document.getElementById('itemForm').reset();
                 fetchItems();
