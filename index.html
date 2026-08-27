@@ -62,9 +62,8 @@
     </main>
 
     <script>
-        // PASTE YOUR SUPABASE DETAILS HERE
-        const SUPABASE_URL = "postgresql://postgres:bcKN7gazfMXRlKVE@db.tiwrylrecmjwuprhuqyj.supabase.co:5432/postgres";
-        const SUPABASE_ANON_KEY =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpd3J5bHJlY21qd3Vwcmh1cXlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MDU5MjMsImV4cCI6MjEwMzM4MTkyM30.keuLkhmJzS5Vm6IrpX8D1iDG2rWtW3euOCbo579qULo";
+        const SUPABASE_URL = "https://tiwrylrecmjwuprhuqyj.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpd3J5bHJlY21qd3Vwcmh1cXlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MDU5MjMsImV4cCI6MjEwMzM4MTkyM30.keuLkhmJzS5Vm6IrpX8D1iDG2rWtW3euOCbo579qULo";
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const form = document.getElementById('itemForm');
@@ -78,12 +77,12 @@
                 .order('id', { ascending: false });
 
             if (error) {
-                feedList.innerHTML = `<p class="text-xs text-red-400 text-center py-4">Error loading data. Check API keys.</p>`;
+                feedList.innerHTML = `<p class="text-xs text-red-400 text-center py-4">Error loading data. Check database permissions.</p>`;
                 return;
             }
 
             if (!data || data.length === 0) {
-                feedList.innerHTML = `<div class="text-center py-10 bg-slate-800/40 rounded-xl text-xs text-slate-500">No items reported yet.</div>`;
+                feedList.innerHTML = `<div class="text-center py-10 bg-slate-800/40 rounded-xl text-xs text-slate-500">No items reported yet. Be the first to post!</div>`;
                 return;
             }
 
