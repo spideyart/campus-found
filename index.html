@@ -36,17 +36,17 @@
                         <div class="py-1.5 rounded-lg border border-slate-600 bg-slate-700/50 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500 peer-checked:text-emerald-400 text-xs font-bold transition">🟢 Found</div>
                     </label>
                 </div>
-                <input type="text" id="itemTitle" placeholder="Item Name (e.g. Casio fx-991EX)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                <input type="text" id="itemTitle" placeholder="Item Name (e.g. Casio fx-991EX)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-slate-100">
                 <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="itemLocation" placeholder="Location (e.g. CS Lab 2)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500">
-                    <input type="text" id="itemContact" placeholder="WhatsApp Number" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                    <input type="text" id="itemLocation" placeholder="Location (e.g. CS Lab 2)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-slate-100">
+                    <input type="text" id="itemContact" placeholder="WhatsApp Number" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-slate-100">
                 </div>
-                <textarea id="itemDesc" rows="2" placeholder="Details (color, scratches...)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500"></textarea>
+                <textarea id="itemDesc" rows="2" placeholder="Details (color, scratches...)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-slate-100"></textarea>
                 <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded-lg text-xs transition">Post Item to Cloud</button>
             </form>
         </section>
 
-        <!-- Live Shared Feed -->
+        <!-- Live Feed -->
         <section class="space-y-3">
             <div class="flex justify-between items-center">
                 <h2 class="text-sm font-bold text-slate-300">Live Campus Feed (Shared Globally)</h2>
@@ -55,7 +55,7 @@
                 </button>
             </div>
             <div id="feedList" class="space-y-3">
-                <div class="text-center py-8 text-xs text-slate-500">Loading live items...</div>
+                <div class="text-center py-8 text-xs text-slate-500">Connecting to cloud database...</div>
             </div>
         </section>
 
@@ -65,58 +65,73 @@
         const SUPABASE_URL = "https://tiwrylrecmjwuprhuqyj.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpd3J5bHJlY21qd3Vwcmh1cXlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MDU5MjMsImV4cCI6MjEwMzM4MTkyM30.keuLkhmJzS5Vm6IrpX8D1iDG2rWtW3euOCbo579qULo";
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const form = document.getElementById('itemForm');
+        let client = null;
+        try {
+            client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (err) {
+            console.error(err);
+        }
+
         const feedList = document.getElementById('feedList');
         const submitBtn = document.getElementById('submitBtn');
 
         async function fetchItems() {
-            const { data, error } = await supabase
-                .from('campus_items')
-                .select('*')
-                .order('id', { ascending: false });
-
-            if (error) {
-                feedList.innerHTML = `<p class="text-xs text-red-400 text-center py-4">Error loading data. Check database permissions.</p>`;
+            if (!client) {
+                feedList.innerHTML = `<p class="text-xs text-red-400 text-center py-4">Database failed to initialize.</p>`;
                 return;
             }
 
-            if (!data || data.length === 0) {
-                feedList.innerHTML = `<div class="text-center py-10 bg-slate-800/40 rounded-xl text-xs text-slate-500">No items reported yet. Be the first to post!</div>`;
-                return;
-            }
+            try {
+                const { data, error } = await client
+                    .from('campus_items')
+                    .select('*')
+                    .order('id', { ascending: false });
 
-            feedList.innerHTML = data.map(item => `
-                <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl flex justify-between items-center gap-3">
-                    <div class="space-y-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${item.item_type === 'Lost' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}">${item.item_type.toUpperCase()}</span>
-                            <h3 class="text-sm font-bold text-slate-100">${escapeHTML(item.title)}</h3>
+                if (error) {
+                    feedList.innerHTML = `<div class="p-3 bg-red-900/30 border border-red-700/50 rounded-lg text-center"><p class="text-xs text-red-300 font-semibold">Database Error: ${error.message}</p></div>`;
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    feedList.innerHTML = `<div class="text-center py-10 bg-slate-800/40 border border-slate-800 rounded-xl text-xs text-slate-400">No items posted yet. Be the first to report!</div>`;
+                    return;
+                }
+
+                feedList.innerHTML = data.map(item => `
+                    <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl flex justify-between items-center gap-3">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${item.item_type === 'Lost' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}">${escapeHTML(item.item_type)}</span>
+                                <h3 class="text-sm font-bold text-slate-100">${escapeHTML(item.title)}</h3>
+                            </div>
+                            <p class="text-xs text-slate-400">${escapeHTML(item.description || 'No extra details.')}</p>
+                            <p class="text-[11px] text-slate-500"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i>${escapeHTML(item.location)}</p>
                         </div>
-                        <p class="text-xs text-slate-400">${escapeHTML(item.description || 'No extra details.')}</p>
-                        <p class="text-[11px] text-slate-500"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i>${escapeHTML(item.location)}</p>
+                        
+                        <div class="flex flex-col items-end gap-2 shrink-0">
+                            <a href="https://wa.me/91${item.contact.replace(/[^0-9]/g, '')}" target="_blank" class="bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-emerald-600/30 transition">
+                                <i class="fa-brands fa-whatsapp"></i> Chat
+                            </a>
+                            <button onclick="deleteItem(${item.id})" class="text-[11px] text-red-400 hover:text-red-300 flex items-center gap-1 transition">
+                                <i class="fa-regular fa-trash-can"></i> Remove
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div class="flex flex-col items-end gap-2 shrink-0">
-                        <a href="https://wa.me/91${item.contact.replace(/[^0-9]/g, '')}" target="_blank" class="bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-emerald-600/30 transition">
-                            <i class="fa-brands fa-whatsapp"></i> Chat
-                        </a>
-                        <button onclick="deleteItem(${item.id})" class="text-[11px] text-red-400 hover:text-red-300 flex items-center gap-1 transition">
-                            <i class="fa-regular fa-trash-can"></i> Remove
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            } catch (err) {
+                feedList.innerHTML = `<p class="text-xs text-red-400 text-center py-4">Network error: ${err.message}</p>`;
+            }
         }
 
         async function deleteItem(id) {
             if (confirm("Are you sure you want to remove this item?")) {
-                await supabase.from('campus_items').delete().eq('id', id);
-                fetchItems();
+                const { error } = await client.from('campus_items').delete().eq('id', id);
+                if (error) alert("Error deleting: " + error.message);
+                else fetchItems();
             }
         }
 
-        form.addEventListener('submit', async (e) => {
+        document.getElementById('itemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             submitBtn.disabled = true;
             submitBtn.innerText = "Posting...";
@@ -129,15 +144,20 @@
                 description: document.getElementById('itemDesc').value
             };
 
-            await supabase.from('campus_items').insert([newItem]);
-            form.reset();
+            const { error } = await client.from('campus_items').insert([newItem]);
+            if (error) {
+                alert("Failed to post: " + error.message);
+            } else {
+                document.getElementById('itemForm').reset();
+                fetchItems();
+            }
+
             submitBtn.disabled = false;
             submitBtn.innerText = "Post Item to Cloud";
-            fetchItems();
         });
 
         function escapeHTML(str) {
-            return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
+            return str ? String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
         }
 
         fetchItems();
